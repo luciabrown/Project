@@ -138,3 +138,8 @@ model.fit(
 # Evaluate performance
 accuracy = model.evaluate(X_test, y_test)
 print(f"\nTest Accuracy: {accuracy[1]:.2f}")
+
+model.save('my_model.h5') 
+#from tensorflow.keras.models import load_model
+#loaded_model = load_model('my_model.h5')
+#predictions = loaded_model.predict(X_new_data)
