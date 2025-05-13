@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
@@ -103,6 +103,14 @@ model = Sequential([
     Dense(4, activation='softmax')
 ])
 
+lr_scheduler = ReduceLROnPlateau(
+    monitor='val_loss',  # Monitor  validation loss
+    factor=0.5,          # Reduce the learning rate by  0.5
+    patience=3,          # Wait for 3 epochs without improvement before reducing the learning rate
+    min_lr=1e-6,         # Lower bound for the learning rate
+    verbose=1            # Print when the learning rate is reduced
+)
+
 # Compile the model
 model.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -119,7 +127,13 @@ class_weights = {
 
 # Train the model
 early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test), callbacks=[early_stopping], class_weight=class_weights)
+model.fit(
+    X_train, y_train,
+    epochs=100,
+    batch_size=10,
+    validation_data=(X_test, y_test),
+    callbacks=[early_stopping, lr_scheduler]
+)
 
 # Evaluate performance
 accuracy = model.evaluate(X_test, y_test)
