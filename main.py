@@ -99,7 +99,7 @@ model = Sequential([
     Dense(64, activation='relu'),
     BatchNormalization(),
     Dense(32, activation='relu'),
-    Dense(3, activation='softmax')  # 3 cryptographic function classes
+    Dense(4, activation='softmax')
 ])
 
 # Compile the model
@@ -117,8 +117,40 @@ model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, 
 accuracy = model.evaluate(X_test, y_test)
 print(f"\nTest Accuracy: {accuracy[1]:.2f}")
 
-# Example prediction
-sample_input = np.array([[32.0, 8, 20, 200, 1, 0, 1, 0]])  # [cpu_power, ram, latency, bandwidth, aes_ni, tpm, secure_enclave, os_type]
-sample_input_processed = preprocessor.transform(sample_input)
-predicted_class = np.argmax(model.predict(sample_input_processed), axis=1)
-print(f"Predicted cryptographic function: {predicted_class[0]}")
+# Generate 25 new synthetic samples using your existing generators
+def generate_sample():
+    os_type = os_map[generate_FAKE_os_type()]
+    cpu = generate_FAKE_cpu_info()
+    cpu_arch_num = cpu_architecture_map.get(cpu["arch"], -1)
+    ram = generate_FAKE_ram_size()
+    sec = generate_FAKE_security_capabilities()
+    net = generate_FAKE_network_info()
+
+    return [
+        os_type,
+        cpu["freq"],
+        cpu["cores"],
+        cpu_arch_num,
+        cpu["aes_ni"],
+        ram["total_mb"],
+        sec["aes_ni"],
+        sec["tpm"],
+        sec["secure_enclave"],
+        net["latency_ms"],
+        net["bandwidth_mbps"]
+    ]
+
+# Generate 25 samples
+sample_inputs = [generate_sample() for _ in range(25)]
+
+# Preprocess the inputs
+sample_inputs_processed = preprocessor.transform(sample_inputs)
+
+# Predict
+predictions = model.predict(sample_inputs_processed)
+predicted_classes = np.argmax(predictions, axis=1)
+
+# Print results
+print("\nPredictions for 25 new synthetic environments:\n")
+for i, (inp, pred) in enumerate(zip(sample_inputs, predicted_classes), 1):
+    print(f"Sample {i}: Input={inp} Predicted Crypto Function: {pred}")
