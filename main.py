@@ -28,6 +28,12 @@ os_map = {
     "FreeBSD": 6
 }
 
+cpu_architecture_map = {
+    "x86_64":0,
+    "armv8":1,
+    "armv7":2
+}
+
 # Generate dataset using generators
 def generate_synthetic_dataset(num_samples=10000):
     dataset = []
@@ -37,6 +43,7 @@ def generate_synthetic_dataset(num_samples=10000):
         # Generate data for each feature
         os_type = os_map[generate_FAKE_os_type()]
         cpu = generate_FAKE_cpu_info()
+        cpu_arch_num = cpu_architecture_map.get(cpu["arch"], -1)
         ram = generate_FAKE_ram_size()
         sec = generate_FAKE_security_capabilities()
         net = generate_FAKE_network_info()
@@ -47,10 +54,10 @@ def generate_synthetic_dataset(num_samples=10000):
             os_type,                                  # OS Type
             cpu["freq"],                              # CPU frequency
             cpu["cores"],                             # CPU cores
-            cpu["arch"],                              # CPU architecture (categorical)
-            cpu["aes_ni"],       # AES-NI availability
+            cpu_arch_num,                              # CPU architecture
+            cpu["aes_ni"],                            # AES-NI availability
             ram["total_mb"],                          # RAM size
-            sec["aes_ni"],       # Security capabilities - AES-NI
+            sec["aes_ni"],                            # Security capabilities - AES-NI
             sec["tpm"],                               # TPM availability
             sec["secure_enclave"],                    # Secure enclave availability
             net["latency_ms"],                        # Latency (ms)
