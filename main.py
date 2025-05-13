@@ -1,4 +1,4 @@
-# Generate 25 new synthetic samples using your existing generators
+# pip install -r requirements.txt
 import neuralNet as nn
 
 def generate_sample():
