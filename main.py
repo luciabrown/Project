@@ -6,66 +6,95 @@ from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-import random
 
-# Fake data
-def generate_fake_data(num_samples=1000):
-    data = []
+# Import synthetic data generators
+from data.A_osType import generate_FAKE_os_type
+from data.B_cpuInfo import generate_FAKE_cpu_info
+from data.C_ramInfo import generate_FAKE_ram_info
+from data.D_capabilities import generate_FAKE_security_capabilities
+from data.E_networkInfo import generate_FAKE_network_info
+from data.F_algos import generate_FAKE_algorithms_choices
+
+# Map OS types to numeric values for ML input
+os_map = {
+    "Windows": 0,
+    "Linux": 1,
+    "macOS": 2,
+    "Android": 3,
+    "iOS": 4,
+    "EmbeddedLinux": 5
+}
+
+# Generate synthetic dataset using imported realistic generators
+def generate_synthetic_dataset(num_samples=1000):
+    dataset = []
     for _ in range(num_samples):
-        cpu_power = random.randint(2000, 4000)   # Random CPU power between 2000 and 4000
-        ram_size = random.choice([4, 8, 16, 32])  # Random RAM size from a set of options
-        latency = random.randint(10, 50)         # Random latency between 10 and 50 ms
-        security = random.choice([128, 256])     # Random security options: 128-bit or 256-bit
-        bandwidth = random.randint(50, 200)      # Random bandwidth between 50 and 200 Mbps
-        cryptographic_function = random.choice([0, 1, 2])  # Randomly choose a cryptographic function (0, 1, 2)
-        
-        # Append this data point
-        data.append([cpu_power, ram_size, latency, security, bandwidth, cryptographic_function])
+        os_type = os_map[generate_os_type()]
+        cpu = generate_cpu_info()
+        ram = generate_ram_info()
+        net = generate_network_info()
+        sec = generate_security_capabilities()
+        label = generate_supported_algorithms()  # crypto function: 0=AES-128, 1=AES-256, 2=ChaCha20
+
+        cpu_power = cpu["freq"] * cpu["cores"]  # Combine frequency and core count
+
+        # Input format: [cpu_power, ram_size, latency, bandwidth, aes_ni, tpm, enclave, os_type, label]
+        dataset.append([
+            cpu_power,
+            ram["total_gb"],
+            net["latency_ms"],
+            net["bandwidth_mbps"],
+            sec["aes_ni"],
+            sec["tpm"],
+            sec["enclave"],
+            os_type,
+            label
+        ])
     
-    # Convert the list to a numpy array
-    return np.array(data)
+    return np.array(dataset)
 
-# Generate more synthetic data (1000 samples for this example)
-data = generate_fake_data(1000)
+# Generate the dataset
+data = generate_synthetic_dataset(1000)
 
-# Separate features (X) and labels (y)
-X = data[:, :-1]  # All columns except the last (features)
-y = data[:, -1]   # The last column (labels)
+# Split into features and labels
+X = data[:, :-1]  # Features
+y = data[:, -1]   # Labels
 
-# Scale the features
+# Normalize input features
 scaler = MinMaxScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Train-test split
+# Split into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-# Define neural network model with enhanced architecture
+# Define the neural network model
 model = Sequential([
     Dense(128, input_dim=X_train.shape[1], activation='relu'),
     BatchNormalization(),
-    Dropout(0.2),  # Dropout layer to prevent overfitting
+    Dropout(0.2),
     Dense(64, activation='relu'),
     BatchNormalization(),
     Dense(32, activation='relu'),
-    Dense(3, activation='softmax')  # Output layer (3 classes: AES-128, AES-256, ChaCha20)
+    Dense(3, activation='softmax')  # 3 cryptographic function classes
 ])
 
-# Compile the model with an optimized learning rate
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-# Implement EarlyStopping callback
-early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+# Compile the model
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
 
 # Train the model
+early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
-# Evaluate the model
+# Evaluate performance
 accuracy = model.evaluate(X_test, y_test)
-print(f"Test Accuracy: {accuracy[1]:.2f}")
+print(f"\nTest Accuracy: {accuracy[1]:.2f}")
 
-# Use trained model to predict
-sample_input = np.array([[3200, 8, 20, 128, 120]])  # A new scenario
-sample_input_scaled = scaler.transform(sample_input)  # Scale the sample input
+# Example prediction
+sample_input = np.array([[32.0, 8, 20, 200, 1, 0, 1, 0]])  # [cpu_power, ram, latency, bandwidth, aes_ni, tpm, enclave, os_type]
+sample_input_scaled = scaler.transform(sample_input)
 predicted_class = np.argmax(model.predict(sample_input_scaled), axis=1)
 print(f"Predicted cryptographic function: {predicted_class[0]}")
