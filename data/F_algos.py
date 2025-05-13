@@ -10,7 +10,3 @@ def generate_FAKE_algorithms_choices():
         ["RSA-2048", "ECDSA", "AES-128"]
     ]
     return random.choice(algos)
-
-if __name__ == "__main__":
-    for _ in range(10000):
-        print(generate_FAKE_algorithms_choices())
